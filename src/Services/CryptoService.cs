@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Crypto.Monitoring.src.Services.Interfaces;
 
 namespace Crypto.Monitoring.src.Services
@@ -14,7 +15,13 @@ namespace Crypto.Monitoring.src.Services
 
                 var response = await client.GetAsync(GetUrl(symbol, currency));
                 var responseBody = await response.Content.ReadAsStringAsync();
-                return responseBody;
+
+                var document = JsonDocument.Parse(responseBody);
+
+                var value = document.RootElement
+                    .GetProperty(symbol);
+
+                return value.GetProperty("brl").GetDecimal();
             }
         }
 
