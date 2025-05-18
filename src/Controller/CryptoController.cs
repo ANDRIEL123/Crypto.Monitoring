@@ -1,4 +1,4 @@
-using Crypto.Monitoring.src.Services.Interfaces;
+using Crypto.Monitoring.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace hangfire.Controller
@@ -15,11 +15,11 @@ namespace hangfire.Controller
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetCurrentCrypto()
+        public async Task<IActionResult> GetAccountBalance()
         {
-            var response = await _cryptoService.GetCurrentCrypto();
+            await _cryptoService.ConsultingBalance();
 
-            return Ok(response);
+            return Ok();
         }
     }
 }

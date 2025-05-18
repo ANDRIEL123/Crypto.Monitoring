@@ -1,39 +1,93 @@
-using System.Text.Json;
-using Crypto.Monitoring.src.Services.Interfaces;
+using Binance.Net.Clients;
+using Crypto.Monitoring.Services.Interfaces;
+using CryptoExchange.Net.Authentication;
 
-namespace Crypto.Monitoring.src.Services
+namespace Crypto.Monitoring.Services
 {
     public class CryptoService : ICryptoService
     {
-        private readonly string BaseAddress = "https://api.coingecko.com";
+        private readonly BinanceRestClient _binanceClient;
+        private readonly IDiscordBotService _discordBotService;
 
-        public async Task<object> GetCurrentCrypto(string symbol = "bitcoin", string currency = "brl")
+        public CryptoService(IDiscordBotService discordBotService)
         {
-            using (var client = new HttpClient())
+            _binanceClient = new BinanceRestClient(options =>
             {
-                client.BaseAddress = new Uri(BaseAddress);
+                options.ApiCredentials = new ApiCredentials(Environment.GetEnvironmentVariable("BINANCE_API_KEY")!, Environment.GetEnvironmentVariable("BINANCE_API_SECRET")!);
+            });
 
-                var response = await client.GetAsync(GetUrl(symbol, currency));
-                var responseBody = await response.Content.ReadAsStringAsync();
-
-                var document = JsonDocument.Parse(responseBody);
-
-                var value = document.RootElement
-                    .GetProperty(symbol);
-
-                return value.GetProperty("brl").GetDecimal();
-            }
+            _discordBotService = discordBotService;
         }
 
         /// <summary>
-        /// CoinGecko Api Url
+        /// Current balance for all my crypto
+        /// </summary>
+        /// <returns></returns>
+        public async Task ConsultingBalance()
+        {
+            var currentBalanceText = "Saldos da minhas moedas\n\n";
+            var currentBalance = 0m;
+
+            var account = await _binanceClient.SpotApi.Account.GetAccountInfoAsync();
+
+            if (account.Success)
+            {
+                foreach (var balance in account.Data.Balances)
+                {
+                    if (balance.Available > 0)
+                    {
+                        var price = await GetPriceAndChange(balance.Asset + "BRL");
+
+                        var balanceAsset = price.Item1 > 0 ? balance.Available * price.Item1 : balance.Available;
+
+                        currentBalanceText += $"Moeda: {balance.Asset}\n";
+                        currentBalanceText += $"Saldo Disponível: {balance.Available}\n";
+                        currentBalanceText += $"Valor total em R$: {Math.Round(balanceAsset), 2}\n";
+                        currentBalanceText += $"Variação nas últimas 24hrs: {price.Item2}%\n\n";
+
+                        currentBalance += balanceAsset;
+                    }
+                }
+            }
+            else
+                Console.WriteLine($"Erro ao obter saldo: {account.Error}");
+
+            currentBalanceText += $"\nSaldo total atual R$: {Math.Round(currentBalance, 2)}\n";
+            // Console.WriteLine(currentBalanceText);
+
+            // Send to discord
+            await _discordBotService.SendMessageToChannel(currentBalanceText);
+        }
+
+        // TODO As 10 cryptos que tiveram o maior aumento ou queda nas últimas 24 horas
+
+
+
+        /// <summary>
+        /// Get current price and variation in the last 24 hours
         /// </summary>
         /// <param name="symbol"></param>
-        /// <param name="currency"></param>
         /// <returns></returns>
-        private static string GetUrl(string symbol = "bitcoin", string currency = "BRL")
+        public async Task<(decimal, decimal)> GetPriceAndChange(string symbol)
         {
-            return $"/api/v3/simple/price?ids={symbol}&vs_currencies={currency}";
+            // Melhorar isso
+            if (symbol == "BRLBRL")
+                return default;
+
+            var finalSymbol = symbol.ToUpper();
+
+            var ticker = await _binanceClient.SpotApi.ExchangeData.GetTickerAsync(finalSymbol);
+
+            if (ticker.Success)
+                return (ticker.Data.LastPrice, ticker.Data.PriceChangePercent);
+            else
+            {
+                Console.WriteLine($"Erro ao obter preço para {symbol}: {ticker.Error}");
+            }
+
+            return default;
+
+            // TODO Send to discord
         }
     }
 }

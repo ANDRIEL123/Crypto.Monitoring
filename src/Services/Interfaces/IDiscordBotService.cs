@@ -2,8 +2,8 @@ using Crypto.Monitoring.Models;
 
 namespace Crypto.Monitoring.Services.Interfaces
 {
-    public interface ICryptoService
+    public interface IDiscordBotService
     {
-        Task ConsultingBalance();
+        Task SendMessageToChannel(string message);
     }
 }

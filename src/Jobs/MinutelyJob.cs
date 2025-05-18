@@ -1,4 +1,6 @@
 using System.Linq.Expressions;
+using Crypto.Monitoring.Services;
+using Crypto.Monitoring.src.Services;
 
 namespace Hangfire.Jobs.Jobs
 {
@@ -6,7 +8,7 @@ namespace Hangfire.Jobs.Jobs
     {
         public static Expression<Action> Execute()
         {
-            return () => Console.WriteLine("Job por minuto em execução 2");
+            return () => Task.Run(() => new CryptoService(new DiscordBotService()).ConsultingBalance());
         }
     }
 }

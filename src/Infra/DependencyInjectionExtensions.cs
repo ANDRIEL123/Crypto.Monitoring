@@ -1,5 +1,6 @@
+using Crypto.Monitoring.Services;
+using Crypto.Monitoring.Services.Interfaces;
 using Crypto.Monitoring.src.Services;
-using Crypto.Monitoring.src.Services.Interfaces;
 
 namespace Crypto.Monitoring.Infra
 {
@@ -8,6 +9,7 @@ namespace Crypto.Monitoring.Infra
         public static IServiceCollection AddServices(this IServiceCollection services)
         {
             services.AddScoped<ICryptoService, CryptoService>();
+            services.AddScoped<IDiscordBotService, DiscordBotService>();
 
             return services;
         }
