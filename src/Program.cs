@@ -1,9 +1,11 @@
 using Crypto.Monitoring.Infra;
+using Crypto.Monitoring.Infra.DashboardAuthorization;
 using Hangfire;
 using Hangfire.PostgreSql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+DotNetEnv.Env.Load();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -39,8 +41,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Painel do Hangfire
-app.UseHangfireDashboard();
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new AllowAllDashboardAuthorizationFilter()] // TODO Libera todos usuários, implementar autenticação adequada
+});
 
 app.UseCors(x => x
     .AllowAnyOrigin()

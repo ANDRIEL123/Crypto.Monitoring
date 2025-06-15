@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Hangfire.Jobs.Jobs
+namespace Crypto.Monitoring.Jobs
 {
     public class DailyJob
     {

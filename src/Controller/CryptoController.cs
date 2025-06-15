@@ -1,7 +1,7 @@
 using Crypto.Monitoring.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
-namespace hangfire.Controller
+namespace Crypto.Monitoring.Controller
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -18,6 +18,14 @@ namespace hangfire.Controller
         public async Task<IActionResult> GetAccountBalance()
         {
             await _cryptoService.ConsultingBalance();
+
+            return Ok();
+        }
+
+        [HttpGet("top-cypto")]
+        public async Task<IActionResult> GetTopCryptoChange()
+        {
+            await _cryptoService.GetTopCryptoChange();
 
             return Ok();
         }

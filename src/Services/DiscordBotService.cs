@@ -1,6 +1,6 @@
 ﻿using Crypto.Monitoring.Services.Interfaces;
 
-namespace Crypto.Monitoring.src.Services
+namespace Crypto.Monitoring.Services
 {
     public class DiscordBotService : IDiscordBotService
     {
@@ -16,7 +16,7 @@ namespace Crypto.Monitoring.src.Services
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine("Mensagem enviada com sucesso!");
+                Console.WriteLine("Mensagem enviada com sucesso para o discord!");
             }
             else
             {

@@ -1,34 +1,36 @@
 using System.Linq.Expressions;
-using Hangfire.Jobs.Enums;
+using Crypto.Monitoring.Enums;
+using Hangfire;
 
-namespace Hangfire.Jobs.Jobs
+namespace Crypto.Monitoring.Jobs
 {
     public class JobsHelper
     {
-        public static Expression<Action> GetJob(JobsEnum job)
+        [Obsolete]
+        public static Expression<Action> GetJob(TypeJobsEnum job)
         {
             switch (job)
             {
-                case JobsEnum.Hour:
+                case TypeJobsEnum.Hour:
                     return HourJob.Execute();
-                case JobsEnum.Minutely:
+                case TypeJobsEnum.Minutely:
                     return MinutelyJob.Execute();
-                case JobsEnum.Daily:
+                case TypeJobsEnum.Daily:
                     return DailyJob.Execute();
                 default:
                     return () => Console.WriteLine("Default");
             }
         }
 
-        public static string GetCron(JobsEnum job)
+        public static string GetCron(TypeJobsEnum job)
         {
             switch (job)
             {
-                case JobsEnum.Hour:
+                case TypeJobsEnum.Hour:
                     return Cron.Hourly();
-                case JobsEnum.Minutely:
+                case TypeJobsEnum.Minutely:
                     return Cron.Minutely();
-                case JobsEnum.Daily:
+                case TypeJobsEnum.Daily:
                     return Cron.Daily();
                 default:
                     return string.Empty;

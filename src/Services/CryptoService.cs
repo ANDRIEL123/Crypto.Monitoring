@@ -1,3 +1,4 @@
+using System.Text;
 using Binance.Net.Clients;
 using Crypto.Monitoring.Services.Interfaces;
 using CryptoExchange.Net.Authentication;
@@ -8,6 +9,7 @@ namespace Crypto.Monitoring.Services
     {
         private readonly BinanceRestClient _binanceClient;
         private readonly IDiscordBotService _discordBotService;
+        private StringBuilder _resumeText = new();
 
         public CryptoService(IDiscordBotService discordBotService)
         {
@@ -25,7 +27,7 @@ namespace Crypto.Monitoring.Services
         /// <returns></returns>
         public async Task ConsultingBalance()
         {
-            var currentBalanceText = "Saldos da minhas moedas\n\n";
+            _resumeText.Append("\n\n**SALDO DAS MINHAS MOEDAS**\n\n");
             var currentBalance = 0m;
 
             var account = await _binanceClient.SpotApi.Account.GetAccountInfoAsync();
@@ -40,10 +42,10 @@ namespace Crypto.Monitoring.Services
 
                         var balanceAsset = price.Item1 > 0 ? balance.Available * price.Item1 : balance.Available;
 
-                        currentBalanceText += $"Moeda: {balance.Asset}\n";
-                        currentBalanceText += $"Saldo Disponível: {balance.Available}\n";
-                        currentBalanceText += $"Valor total em R$: {Math.Round(balanceAsset), 2}\n";
-                        currentBalanceText += $"Variação nas últimas 24hrs: {price.Item2}%\n\n";
+                        _resumeText.Append($"Moeda: {balance.Asset}\n");
+                        _resumeText.Append($"Saldo Disponível: {balance.Available}\n");
+                        _resumeText.Append($"Valor total em R$: {Math.Round(balanceAsset), 2}\n");
+                        _resumeText.Append($"Variação nas últimas 24hrs: {price.Item2}%\n");
 
                         currentBalance += balanceAsset;
                     }
@@ -52,23 +54,80 @@ namespace Crypto.Monitoring.Services
             else
                 Console.WriteLine($"Erro ao obter saldo: {account.Error}");
 
-            currentBalanceText += $"\nSaldo total atual R$: {Math.Round(currentBalance, 2)}\n";
-            // Console.WriteLine(currentBalanceText);
+            _resumeText.Append($"\n**SALDO TOTAL ATUAL R$:** {Math.Round(currentBalance, 2)}\n");
 
             // Send to discord
-            await _discordBotService.SendMessageToChannel(currentBalanceText);
+            await _discordBotService.SendMessageToChannel(GetMessageToSend());
         }
 
-        // TODO As 10 cryptos que tiveram o maior aumento ou queda nas últimas 24 horas
+        /// <summary>
+        /// As 10 cryptos que tiveram o maior aumento ou queda nas últimas 24 horas
+        /// </summary>
+        /// <returns></returns>
+        public async Task GetTopCryptoChange()
+        {
+            _resumeText.Append("\n**TOP 10 CRYPTOS COM MAIOR VARIAÇÃO**\n\n");
+            var data = await _binanceClient.SpotApi.ExchangeData.GetTickersAsync();
+            var top10 = data.Data
+                .Where(x => x.Symbol.EndsWith("BRL") && x.PriceChangePercent != 0)
+                .Select(x => new
+                {
+                    x.Symbol,
+                    x.PriceChangePercent,
+                    x.LastPrice
+                })
+                .OrderByDescending(x => Math.Abs(x.PriceChangePercent))
+                .Take(10)
+                .ToList();
 
+            foreach (var crypto in top10)
+            {
+                _resumeText.Append($"Moeda: {crypto.Symbol}\n");
+                _resumeText.Append($"Variação: {Math.Round(crypto.PriceChangePercent), 2}%\n");
+                _resumeText.Append($"Ultimo preço: {Math.Round(crypto.LastPrice, 2)} R$\n\n");
+            }
 
+            // Send to discord
+            await _discordBotService.SendMessageToChannel(GetMessageToSend());
+        }
+
+        /// <summary>
+        /// Top 10 cryptos com maior preço e sua variação nas últimas 24 horas
+        /// </summary>
+        /// <returns></returns>
+        public async Task GetTopCryptoChangeMarketCap()
+        {
+            _resumeText.Append("\n**TOP 10 CRYPTOS COM MAIOR PREÇO E SUA VARIAÇÃO**\n\n");
+            var data = await _binanceClient.SpotApi.ExchangeData.GetTickersAsync();
+            var top10 = data.Data
+                .Where(x => x.Symbol.EndsWith("BRL"))
+                .Select(x => new
+                {
+                    x.Symbol,
+                    x.PriceChangePercent,
+                    x.LastPrice
+                })
+                .OrderByDescending(x => x.LastPrice)
+                .Take(10)
+                .ToList();
+
+            foreach (var crypto in top10)
+            {
+                _resumeText.Append($"Moeda: {crypto.Symbol}\n");
+                _resumeText.Append($"Variação: {Math.Round(crypto.PriceChangePercent), 2}%\n");
+                _resumeText.Append($"Ultimo preço: {Math.Round(crypto.LastPrice, 2)} R$\n\n");
+            }
+
+            // Send to discord
+            await _discordBotService.SendMessageToChannel(GetMessageToSend());
+        }
 
         /// <summary>
         /// Get current price and variation in the last 24 hours
         /// </summary>
         /// <param name="symbol"></param>
         /// <returns></returns>
-        public async Task<(decimal, decimal)> GetPriceAndChange(string symbol)
+        private async Task<(decimal, decimal)> GetPriceAndChange(string symbol)
         {
             // Melhorar isso
             if (symbol == "BRLBRL")
@@ -86,8 +145,12 @@ namespace Crypto.Monitoring.Services
             }
 
             return default;
+        }
 
-            // TODO Send to discord
+        private string GetMessageToSend()
+        {
+            _resumeText.Append("================");
+            return _resumeText.ToString();
         }
     }
 }

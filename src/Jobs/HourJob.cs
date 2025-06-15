@@ -1,14 +1,13 @@
 using System.Linq.Expressions;
 using Crypto.Monitoring.Services;
-using Crypto.Monitoring.src.Services;
 
-namespace Hangfire.Jobs.Jobs
+namespace Crypto.Monitoring.Jobs
 {
     public class HourJob
     {
         public static Expression<Action> Execute()
         {
-            return () => Task.Run(() => new CryptoService(new DiscordBotService()).ConsultingBalance());
+            return () => Console.WriteLine("Job por hora em execução");
         }
     }
 }

@@ -1,30 +1,33 @@
-using Crypto.Monitoring.Services;
+using Crypto.Monitoring.Enums;
+using Crypto.Monitoring.Jobs;
+using Crypto.Monitoring.src.Enums;
+using Crypto.Monitoring.src.Jobs.Factories;
 using Hangfire;
-using Hangfire.Jobs.Enums;
-using Hangfire.Jobs.Jobs;
 using Microsoft.AspNetCore.Mvc;
 
-namespace hangfire.Controller
+namespace Crypto.Monitoring.Controller
 {
     [ApiController]
     [Route("api/[controller]")]
     public class JobsController : ControllerBase
     {
         [HttpPost]
-        public IActionResult CreateRecurringJob(JobsEnum typeJob, string jobId)
+        public IActionResult CreateRecurringJob(TypeJobsEnum typeJob, JobsEnum job)
         {
-            var job = JobsHelper.GetJob(typeJob);
+            var jobId = Guid.NewGuid().ToString();
             var cron = JobsHelper.GetCron(typeJob);
 
-            //RecurringJob.AddOrUpdate(
-            //    jobId,
-            //    job,
-            //    cron
-            //);
-
-            RecurringJob.AddOrUpdate<CryptoService>(jobId, job => job.ConsultingBalance(), cron);
+            JobsFactory.CreateJob(jobId, cron, job);
 
             return Ok($"Job {jobId} do tipo {typeJob} criado com sucesso.");
+        }
+
+        [HttpDelete]
+        public IActionResult DeleteRecurringJob(string jobId)
+        {
+            RecurringJob.RemoveIfExists(jobId);
+
+            return Ok($"Job {jobId} foi deletado se ele existia.");
         }
     }
 }

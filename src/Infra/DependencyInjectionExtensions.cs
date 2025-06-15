@@ -1,6 +1,5 @@
 using Crypto.Monitoring.Services;
 using Crypto.Monitoring.Services.Interfaces;
-using Crypto.Monitoring.src.Services;
 
 namespace Crypto.Monitoring.Infra
 {
